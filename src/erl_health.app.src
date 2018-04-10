@@ -1,0 +1,24 @@
+{application, erl_health, [
+    {description,
+        "Erlang health check handle"
+    },
+    {vsn, "1"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        cowboy,
+        jsx,
+        os_mon,
+        cg_mon
+    ]},
+    {runtime_dependencies, [
+    ]},
+    {env, []},
+    {modules, []},
+    {maintainers, [
+        "Petr Kozorezov <petr.kozorezov@rbkmoney.com>"
+    ]},
+    {licenses, []},
+    {links, ["https://github.com/rbkmoney/erlang-health-check-handle-server"]}
+]}.

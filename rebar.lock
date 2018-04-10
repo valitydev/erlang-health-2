@@ -1,0 +1,16 @@
+{"1.1.0",
+[{<<"cg_mon">>,
+  {git,"https://github.com/rbkmoney/cg_mon.git",
+       {ref,"5a87a37694e42b6592d3b4164ae54e0e87e24e18"}},
+  0},
+ {<<"cowboy">>,{pkg,<<"cowboy">>,<<"1.0.4">>},0},
+ {<<"cowlib">>,{pkg,<<"cowlib">>,<<"1.0.2">>},1},
+ {<<"jsx">>,{pkg,<<"jsx">>,<<"2.8.0">>},0},
+ {<<"ranch">>,{pkg,<<"ranch">>,<<"1.4.0">>},1}]}.
+[
+{pkg_hash,[
+ {<<"cowboy">>, <<"A324A8DF9F2316C833A470D918AAF73AE894278B8AA6226CE7A9BF699388F878">>},
+ {<<"cowlib">>, <<"9D769A1D062C9C3AC753096F868CA121E2730B9A377DE23DEC0F7E08B1DF84EE">>},
+ {<<"jsx">>, <<"749BEC6D205C694AE1786D62CEA6CC45A390437E24835FD16D12D74F07097727">>},
+ {<<"ranch">>, <<"10272F95DA79340FA7E8774BA7930B901713D272905D0012B06CA6D994F8826B">>}]}
+].
