@@ -81,11 +81,11 @@ memory(Limit) ->
     limit(memory, (Total - maps:get(free_memory, MemStat)) * 100 div Total, Limit).
 
 %% cgroups memory limit
-%% /sys/fs/cgroups memory.usage_in_bytes / memory.limit_in_bytes
+%% /sys/fs/cgroups memory.stat->rss / memory.limit_in_bytes
 -spec cg_memory(number()) ->
     result().
 cg_memory(Limit) ->
-    limit(cg_memory, cg_mem_sup:usage() * 100 div cg_mem_sup:limit(), Limit).
+    limit(cg_memory, cg_mem_sup:rss() * 100 div cg_mem_sup:limit(), Limit).
 
 %% disk limit
 %% 3-th element from disksup:get_disk_data()
