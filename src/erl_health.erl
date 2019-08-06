@@ -8,7 +8,6 @@
 
 %% API
 -export([check/1]).
--export([check/2]).
 
 -export([cpu      /1]).
 -export([load     /1]).
@@ -17,43 +16,97 @@
 -export([disk     /2]).
 -export([service  /1]).
 
--export_type([code   /0]).
--export_type([message/0]).
+-export_type([check/0]).
+-export_type([status /0]).
+-export_type([details/0]).
 -export_type([result /0]).
 -export_type([checker/0]).
+-export_type([event/0]).
 
 %%
 %% API
 %%
--type code() :: pos_integer(). % FIXME
--type message() :: iolist().
+-type status()  :: passing | warning | critical.
+-type details() :: number() | binary() | list() | map().
 
--type result() :: {ok, map()} | {error, code(), message()}.
--type checker() :: {module(), atom(), list()} | fun(() -> result()).
+-type result()           :: {status(), #{name() => details()}}.
+-type check_runner()     :: {module(), atom(), list()} | fun(() -> check_run_result()).
+-type check_run_result() :: {status(), details()}.
 
--spec check([checker()]) ->
+-type checker() :: check_runner() | #{
+    runner        := check_runner(),
+    event_handler => event_handler()
+}.
+
+-type name()  :: atom().
+-type check() :: #{name() => checker()}.
+
+%% Event handler
+-type event() ::
+    {name(),
+        started               |
+        {finished , result()} |
+        {failed   , _Error}
+    }.
+
+-type event_handler() :: {module(), _Opts}.
+
+-callback handle_event(event(), _Opts) ->
+    _.
+
+%%
+-spec check(check()) ->
     result().
-check(Checkers) ->
-    check(Checkers, #{}).
+check(Check) ->
+    Initial = {passing, #{}},
+    maps:fold(fun (Name, C, Acc) -> compose(Acc, Name, run_checker(Name, C)) end, Initial, Check).
 
--spec check([checker()], map()) ->
+-spec run_checker(name(), checker()) ->
+    check_run_result().
+run_checker(Name, Checker = #{runner := Runner}) ->
+    _ = emit_event({Name, started}, Checker),
+    try
+        Result = call_checker(Runner),
+        _ = emit_event({Name, {finished, Result}}, Checker),
+        Result
+    catch Class:Reason:Stacktrace ->
+        _ = emit_event({Name, {failed, {Class, Reason, Stacktrace}}}, Checker),
+        erlang:raise(Class, Reason, Stacktrace)
+    end;
+run_checker(Name, Runner) ->
+    run_checker(Name, #{runner => Runner}).
+
+-spec compose(result(), name(), check_run_result()) ->
     result().
-check([], Resp) ->
-    {ok, Resp};
-check([Checker|OtherChecks], Resp) ->
-    case call_checker(Checker) of
-        {ok, AdditionalResp} ->
-            check(OtherChecks, maps:merge(Resp, AdditionalResp));
-        Error = {error, _, _} ->
-            Error
-    end.
+compose({StatusAcc, DetailsAcc}, Name, {Status, Details}) ->
+    {worst_status(StatusAcc, Status), DetailsAcc#{Name => Details}}.
 
--spec call_checker(checker()) ->
+-spec worst_status(status(), status()) ->
+    status().
+worst_status(Status   , Status ) -> Status;
+worst_status(warning  , passing) -> warning;
+worst_status(critical , passing) -> critical;
+worst_status(critical , warning) -> critical;
+worst_status(S1, S2 ) when
+    S1 == passing;
+    S1 == warning;
+    S1 == critical
+->
+    worst_status(S2, S1).
+
+-spec call_checker(check_runner()) ->
     result().
 call_checker({M, F, A}) ->
     erlang:apply(M, F, A);
 call_checker(Checker) ->
     Checker().
+
+-spec emit_event(event(), checker()) ->
+    _ | no_handler.
+emit_event(Event, #{event_handler := {Module, Opts}}) ->
+    Module:handle_event(Event, Opts);
+emit_event(_Event, _Checker) ->
+    no_handler.
 
 %%
 
@@ -62,55 +115,65 @@ call_checker(Checker) ->
 -spec cpu(number()) ->
     result().
 cpu(Limit) ->
-    limit(cpu, cpu_sup:util(), Limit).
+    limit(cpu_sup:util(), Limit, #{}).
 
 %% load limit
 %% cpu_sup:avg1()
 -spec load(number()) ->
     result().
 load(Limit) ->
-    limit(load, cpu_sup:avg1(), Limit).
+    limit(cpu_sup:avg1(), Limit, #{}).
 
 %% memory limit
 %% memsup:get_system_memory_data(), (total - free) / total
 -spec memory(number()) ->
     result().
 memory(Limit) ->
-    MemStat = maps:from_list(memsup:get_system_memory_data()),
-    Total = maps:get(total_memory, MemStat),
-    limit(memory, (Total - maps:get(free_memory, MemStat)) * 100 div Total, Limit).
+    % > http://erlang.org/doc/man/memsup.html#get_system_memory_data-0
+    % On linux the memory available to the emulator is `cached_memory` and `buffered_memory`
+    % in addition to free_memory.
+    #{
+        free_memory     := Free,
+        cached_memory   := Cached,
+        buffered_memory := Buffered,
+        total_memory    := Total
+    } = maps:from_list(memsup:get_system_memory_data()),
+    TotalFree = Free + Cached + Buffered,
+    Details = #{free => TotalFree, total => Total},
+    limit((Total - TotalFree) * 100 div Total, Limit, Details).
 
 %% cgroups memory limit
 %% /sys/fs/cgroups memory.stat->rss / memory.limit_in_bytes
 -spec cg_memory(number()) ->
     result().
 cg_memory(Limit) ->
-    limit(cg_memory, cg_mem_sup:rss() * 100 div cg_mem_sup:limit(), Limit).
+    RSS = cg_mem_sup:rss(),
+    Total = cg_mem_sup:limit(),
+    Details = #{rss => RSS, total => Total},
+    limit(RSS * 100 div Total, Limit, Details).
 
 %% disk limit
 %% 3-th element from disksup:get_disk_data()
 -spec disk(string(), number()) ->
     result().
 disk(Path, Limit) ->
-    limit(disk, element(3, lists:keyfind(Path, 1, disksup:get_disk_data())), Limit).
+    Details = #{path => Path},
+    limit(element(3, lists:keyfind(Path, 1, disksup:get_disk_data())), Limit, Details).
 
 %% just add 'service' to result
 -spec service(binary()) ->
     result().
 service(ServiceName) ->
-    {ok, #{service => ServiceName}}.
+    {passing, ServiceName}.
 
 %%
 
--spec limit(atom(), V, V) ->
-    result().
-limit(Key, Value, Limit) ->
-    R = case Limit of
-            undefined            -> ok;
-            _ when Limit > Value -> ok;
-            _                    -> error
-        end,
-    case R of
-        ok    -> {ok, #{Key => Value}};
-        error -> {error, 503, atom_to_list(Key) ++ " limit reached"}
+-spec limit(V, V, details()) ->
+    check_run_result().
+limit(Value, Limit, Details0) ->
+    Details = Details0#{value => Value},
+    case Limit of
+        undefined            -> {passing  , Details};
+        _ when Limit > Value -> {passing  , Details#{limit => Limit}};
+        _                    -> {critical , Details#{limit => Limit}}
     end.
