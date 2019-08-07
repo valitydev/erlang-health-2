@@ -109,6 +109,23 @@ flush() ->
         []
     end.
 
+-spec default_event_handler_test_() ->
+    [testcase()].
+default_event_handler_test_() ->
+    Passing = fun () -> {critical, 31337} end,
+    Failing = fun () -> ?MODULE:nonexistent() end,
+    EvHandler = {erl_health_event_handler, []},
+    [
+        ?_assertMatch(
+            {critical, _},
+            erl_health:check(#{?FUNCTION_NAME => #{runner => Passing, event_handler => EvHandler}})
+        ),
+        ?_assertError(
+            _,
+            erl_health:check(#{?FUNCTION_NAME => #{runner => Failing, event_handler => EvHandler}})
+        )
+    ].
+
 %%
 
 -spec handle_event(erl_health:event(), _) ->

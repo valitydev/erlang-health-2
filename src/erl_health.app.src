@@ -9,6 +9,7 @@
         stdlib,
         cowboy,
         jsx,
+        genlib,
         os_mon,
         cg_mon
     ]},
@@ -20,5 +21,5 @@
         "Andrey Mayorov <a.mayorov@rbkmoney.com>"
     ]},
     {licenses, []},
-    {links, ["https://github.com/rbkmoney/erlang-health-check-handle-server"]}
+    {links, ["https://github.com/rbkmoney/erlang-health"]}
 ]}.
