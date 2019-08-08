@@ -157,7 +157,7 @@ cg_memory(Limit) ->
 -spec disk(string(), number()) ->
     result().
 disk(Path, Limit) ->
-    Details = #{path => Path},
+    Details = #{path => genlib:to_binary(Path)},
     limit(element(3, lists:keyfind(Path, 1, disksup:get_disk_data())), Limit, Details).
 
 %% just add 'service' to result
