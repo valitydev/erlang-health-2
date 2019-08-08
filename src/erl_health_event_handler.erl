@@ -9,12 +9,12 @@
 %%
 -spec handle_event(erl_health:event(), _Opts) ->
     _.
-handle_event({Name, started}, _) ->
+handle_event(Event = {Name, started}, _) ->
     logger:debug(
         "Healthcheck ~p started", [Name],
-        #{healthcheck => #{name => Name, event => started}}
+        #{healthcheck => construct_meta(Event)}
     );
-handle_event({Name, {finished, {Status, Details}}}, _) ->
+handle_event(Event = {Name, {finished, {Status, _}}}, _) ->
     Level = case Status of
         passing  -> info;
         warning  -> warning;
@@ -22,14 +22,25 @@ handle_event({Name, {finished, {Status, Details}}}, _) ->
     end,
     logger:Level(
         "Healthcheck ~p: ~p", [Name, Status],
-        #{healthcheck => #{name => Name, event => finished, status => Status, details => Details}}
+        #{healthcheck => construct_meta(Event)}
     );
-handle_event({Name, {failed, {Class, Reason, Stacktrace}}}, _) ->
+handle_event(Event = {Name, {failed, {Class, Reason, Stacktrace}}}, _) ->
     logger:error(
         "Healthcheck ~p failed: ~p:~p ~s",
         [Name, Class, Reason, genlib_format:format_stacktrace(Stacktrace, [newlines])],
-        #{healthcheck => #{name => Name, event => failed, error => #{
-            class => Class,
-            reason => Reason
-        }}}
+        #{healthcheck => construct_meta(Event)}
     ).
+
+-spec construct_meta(erl_health:event()) ->
+    #{atom() => _}.
+construct_meta({Name, Ev = started}) ->
+    #{name => Name, event => Ev};
+construct_meta({Name, {Ev = finished, {Status, Details}}}) ->
+    #{name => Name, event => Ev, status => Status, details => construct_details(Details)};
+construct_meta({Name, {Ev = failed, {Class, Reason, _}}}) ->
+    #{name => Name, event => Ev, error => #{class => Class, reason => Reason}}.
+
+construct_details(Details = #{}) ->
+    Details;
+construct_details(Details) ->
+    #{value => Details}.
