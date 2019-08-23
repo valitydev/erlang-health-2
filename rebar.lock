@@ -5,6 +5,10 @@
   0},
  {<<"cowboy">>,{pkg,<<"cowboy">>,<<"2.5.0">>},0},
  {<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.6.0">>},1},
+ {<<"genlib">>,
+  {git,"https://github.com/rbkmoney/genlib.git",
+       {ref,"901f5d7232e21cddc80c2864bf0c918e862b861a"}},
+  0},
  {<<"jsx">>,{pkg,<<"jsx">>,<<"2.8.0">>},0},
  {<<"ranch">>,{pkg,<<"ranch">>,<<"1.6.2">>},1}]}.
 [

@@ -147,10 +147,14 @@ memory(Limit) ->
 -spec cg_memory(number()) ->
     result().
 cg_memory(Limit) ->
-    RSS = genlib:define(cg_mem_sup:rss(), 0),
-    Total = genlib:define(cg_mem_sup:limit(), 1),
-    Details = genlib_map:compact(#{rss => RSS, total => Total}),
-    limit(RSS * 100 div Total, Limit, Details).
+    cg_memory(cg_mem_sup:rss(), cg_mem_sup:limit(), Limit).
+
+cg_memory(RSS, Total, Limit) when is_integer(RSS), is_integer(Total), Total > 0 ->
+    Details = #{rss => RSS, total => Total},
+    limit(RSS * 100 div Total, Limit, Details);
+cg_memory(_, _, Limit) ->
+    % we don't know (probably yet) cgroup memory metrics
+    {passing, #{value => unknown, limit => Limit}}.
 
 %% disk limit
 %% 3-th element from disksup:get_disk_data()
