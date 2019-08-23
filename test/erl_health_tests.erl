@@ -49,6 +49,18 @@ memory_test_() ->
         )
     ].
 
+-spec disk_test_() ->
+    [testcase()].
+disk_test_() ->
+    [
+        ?_assertMatch(
+            {passing, #{dsk := #{path := <<"/">>, limit := 100}}},
+            erl_health:check(#{
+                dsk => {erl_health, disk, ["/", 100]}
+            })
+        )
+    ].
+
 -spec compose_test_() ->
     [testcase()].
 compose_test_() ->
