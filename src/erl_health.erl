@@ -147,9 +147,9 @@ memory(Limit) ->
 -spec cg_memory(number()) ->
     result().
 cg_memory(Limit) ->
-    RSS = cg_mem_sup:rss(),
-    Total = cg_mem_sup:limit(),
-    Details = #{rss => RSS, total => Total},
+    RSS = genlib:define(cg_mem_sup:rss(), 0),
+    Total = genlib:define(cg_mem_sup:limit(), 1),
+    Details = genlib_map:compact(#{rss => RSS, total => Total}),
     limit(RSS * 100 div Total, Limit, Details).
 
 %% disk limit
