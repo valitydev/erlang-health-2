@@ -86,7 +86,7 @@ compose_test_() ->
     [testcase()].
 event_handler_test_() ->
     Passing = fun () -> {passing, 31337} end,
-    Failing = fun () -> ?MODULE:nonexistent() end,
+    Failing = fun () -> erlang:apply(?MODULE, nonexistent, []) end,
     [
         ?_test(begin
             ?assertMatch({passing, _}, erl_health:check(#{
@@ -125,7 +125,7 @@ flush() ->
     [testcase()].
 default_event_handler_test_() ->
     Passing = fun () -> {critical, 31337} end,
-    Failing = fun () -> ?MODULE:nonexistent() end,
+    Failing = fun () -> erlang:apply(?MODULE, nonexistent, []) end,
     EvHandler = {erl_health_event_handler, []},
     [
         ?_assertMatch(

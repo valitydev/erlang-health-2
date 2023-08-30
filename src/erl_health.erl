@@ -20,6 +20,7 @@
 -export_type([status /0]).
 -export_type([details/0]).
 -export_type([result /0]).
+-export_type([check_run_result/0]).
 -export_type([checker/0]).
 -export_type([event/0]).
 
@@ -95,7 +96,7 @@ worst_status(S1, S2 ) when
     worst_status(S2, S1).
 
 -spec call_checker(check_runner()) ->
-    result().
+    check_run_result().
 call_checker({M, F, A}) ->
     erlang:apply(M, F, A);
 call_checker(Checker) ->
@@ -113,21 +114,21 @@ emit_event(_Event, _Checker) ->
 %% cpu utilization limit
 %% cpu_sup:util()
 -spec cpu(number()) ->
-    result().
+    check_run_result().
 cpu(Limit) ->
     limit(cpu_sup:util(), Limit, #{}).
 
 %% load limit
 %% cpu_sup:avg1()
 -spec load(number()) ->
-    result().
+    check_run_result().
 load(Limit) ->
     limit(cpu_sup:avg1(), Limit, #{}).
 
 %% memory limit
 %% memsup:get_system_memory_data(), (total - free) / total
 -spec memory(number()) ->
-    result().
+    check_run_result().
 memory(Limit) ->
     % > http://erlang.org/doc/man/memsup.html#get_system_memory_data-0
     % On linux the memory available to the emulator is `cached_memory` and `buffered_memory`
@@ -145,7 +146,7 @@ memory(Limit) ->
 %% cgroups memory limit
 %% /sys/fs/cgroups memory.stat->rss / memory.limit_in_bytes
 -spec cg_memory(number()) ->
-    result().
+    check_run_result().
 cg_memory(Limit) ->
     cg_memory(cg_mem_sup:rss(), cg_mem_sup:limit(), Limit).
 
@@ -159,14 +160,14 @@ cg_memory(_, _, Limit) ->
 %% disk limit
 %% 3-th element from disksup:get_disk_data()
 -spec disk(string(), number()) ->
-    result().
+    check_run_result().
 disk(Path, Limit) ->
     Details = #{path => genlib:to_binary(Path)},
     limit(element(3, lists:keyfind(Path, 1, disksup:get_disk_data())), Limit, Details).
 
 %% just add 'service' to result
 -spec service(binary()) ->
-    result().
+    check_run_result().
 service(ServiceName) ->
     {passing, ServiceName}.
 
