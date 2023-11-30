@@ -4,6 +4,7 @@
 -export([get_route/1]).
 -export([get_liveness_route/1]).
 -export([get_readiness_route/1]).
+-export([get_startup_route/1]).
 
 %% cowboy_handler callbacks
 -behaviour(cowboy_handler).
@@ -27,6 +28,11 @@ get_liveness_route(Check) ->
     {iodata(), module(), erl_health:check()}.
 get_readiness_route(Check) ->
     {"/healthz/readiness", ?MODULE, Check}.
+
+-spec get_startup_route(erl_health:check()) ->
+    {iodata(), module(), erl_health:check()}.
+get_startup_route(Check) ->
+    {"/healthz/startup", ?MODULE, Check}.
 
 %%
 %% cowboy_http_handler callbacks
