@@ -6,8 +6,8 @@
  {<<"cowboy">>,{pkg,<<"cowboy">>,<<"2.9.0">>},0},
  {<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.11.0">>},1},
  {<<"genlib">>,
-  {git,"https://github.com/rbkmoney/genlib.git",
-       {ref,"3e1776536802739d8819351b15d54ec70568aba7"}},
+  {git,"https://github.com/valitydev/genlib.git",
+       {ref,"d2324089afbbd9630e85fac554620f1de0b33dfe"}},
   0},
  {<<"jsx">>,{pkg,<<"jsx">>,<<"3.1.0">>},0},
  {<<"ranch">>,{pkg,<<"ranch">>,<<"1.8.0">>},1}]}.
